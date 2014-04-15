@@ -5,7 +5,6 @@ PHP微信公众平台接口
 1，快递查询
 2，单词翻译
 3，听歌
-4，……
 */
 //define your token
 define("TOKEN", "molab");
@@ -26,7 +25,7 @@ class wechatCallbackapiTest{
     public function responseMsg(){
 		//get post data, May be due to the different environments
 		$postStr = $GLOBALS["HTTP_RAW_POST_DATA"];
-
+		
       	//extract post data
 		if (!empty($postStr)){
 			$postObj = simplexml_load_string($postStr, 'SimpleXMLElement', LIBXML_NOCDATA);
@@ -226,13 +225,52 @@ class wechatCallbackapiTest{
 					$title = "没错，我就是老夏，如假包换的老夏！";
 					$description = "你好，我是……，大家都叫我老夏，不妨你也这样称呼我吧！我是一个程序员，主要擅长LAMP。目前从事互联网行业，喜欢折腾新的东西……我有一个博客，记录我的生活、写着我的笔记，如果你有兴趣，你可以点击这里！";
 					$picurl = "http://sanshu.qiniudn.com/pic_anymouse1359347919-1.jpg?token=5FZTA1Dfl7J2SbsAiSNwWusgvd1k10IMyKNY9b1G:rxOz8tgh0a_s9c8CLOCbW8Zycrk=:eyJTIjoic2Fuc2h1LnFpbml1ZG4uY29tL3BpY19hbnltb3VzZTEzNTkzNDc5MTktMS5qcGciLCJFIjoxMzk3NTQyMDEwfQ==&imageView/2/w/203/h/203";
-					$url = "http://blog.molab.cn";
+					$url = "http://find.aliapp.com/Resume/";
 					$resultStr = sprintf($newsTpl, $content, $title, $description, $picurl, $url, 0);
 					echo $resultStr;
 				}else if($keyword == "听歌"){
-					$url = "http://jiawa-public.stor.sinaapp.com/upload/music/201404/Love%20In%20December.mp3";
+					$music = array(
+						array(
+							'title'=>'You are beautiful',
+							'description'=>'You are beautiful',
+							'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/James%20Blunt%20-%20You%20Are%20Beautiful.mp3',
+							'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/James%20Blunt%20-%20You%20Are%20Beautiful.mp3'
+						),
+						array(
+							'title'=>'Jewel - Stand',
+							'description'=>'Stand',
+							'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/jewel%20-%20stand.mp3',
+							'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/jewel%20-%20stand.mp3'
+						),
+						array(
+							'title'=>'TimeLess',
+							'description'=>'Timeless',
+							'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Kelly%20Clarkson%20-%20Timeless.mp3',
+							'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Kelly%20Clarkson%20-%20Timeless.mp3'
+						),
+						array(
+							'title'=>'Because of you',
+							'description'=>'Because of you',
+							'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/kelly%20clarkson%20-%20because%20of%20you.mp3',
+							'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/kelly%20clarkson%20-%20because%20of%20you.mp3'
+						),
+						array(
+							'title'=>'Every Moment of my life',
+							'description'=>'Every Moment of my life',
+							'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Sarah%20Connor%20-%20Every%20Moment%20Of%20My%20Life.mp3',
+							'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Sarah%20Connor%20-%20Every%20Moment%20Of%20My%20Life.mp3'
+						),
+						array(
+							'title'=>'TimeLess',
+							'description'=>'Timeless',
+							'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Kelly%20Clarkson%20-%20Timeless.mp3',
+							'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Kelly%20Clarkson%20-%20Timeless.mp3'
+						)
+					);
 					$musicTpl = $this->replyType("music",$postObj);
-					$resultStr = sprintf($musicTpl, "Love in December","Love in December",$url,$url);
+					$len = count($music);
+					$rd = rand(0,$len-1);
+					$resultStr = sprintf($musicTpl, $music[$rd]['title'],$music[$rd]['description'],$music[$rd]['url'],$music[$rd]['hqurl']);
 				}else{
 					$contentStr = "您的消息已经收到，我们将尽快给您答复，请稍安勿躁~\n\n您的原始消息:".$keyword."\n我正在积极成长当中，目前功能尚少，敬请原谅。现在，你可以发送'听歌'给我享受美妙的音乐啦";
 					$resultStr = sprintf($textTpl, $fromUsername, $toUsername, $time, $msgType, $contentStr);
