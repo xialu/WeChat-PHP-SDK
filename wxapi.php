@@ -283,35 +283,78 @@ class wechatCallbackapiTest{
 		}
 	}
 	
-	public function handleEvent($object){
-		$contentStr = "";
-		switch($object){
+	public function handleEvent($postObj){
+		$content = "";
+		switch($postObj->Event){
 			case 'subscribe':
-				$contentStr = "感谢关注";
+				$newsTpl = $this->replyType('news',$postObj);
+				$content = "Hey , girl! What\'s your name";
+				$title = "Ladies and 乡亲们，欢饮关注户外管家！";
+				$description = "我是户外管家，您的贴身旅游小卫士！我们专长户外游，竭诚为您提供良好的户外游服务！约伴、路线、天气、订票、分享……都可以找我！";
+				$picurl = "http://sanshu.qiniudn.com/pic_anymouse1359347919-1.jpg?token=5FZTA1Dfl7J2SbsAiSNwWusgvd1k10IMyKNY9b1G:rxOz8tgh0a_s9c8CLOCbW8Zycrk=:eyJTIjoic2Fuc2h1LnFpbml1ZG4uY29tL3BpY19hbnltb3VzZTEzNTkzNDc5MTktMS5qcGciLCJFIjoxMzk3NTQyMDEwfQ==&imageView/2/w/203/h/203";
+				$url = "http://find.aliapp.com/Resume/";
+				$resultStr = sprintf($newsTpl, $content, $title, $description, $picurl, $url, 0);
+				echo $resultStr;
+				break;
+			case 'CLICK':
+				$this->handleMenu($postObj);
+				break;
+			case 'VIEW':
+				break;
+			case 'LOCATION':
 				break;
 			default:
-				$contentStr = "未知事件".$object->Event;
+				$content = "未知事件".$postObj->Event;
+				$textTpl = $this->replyType("text",$postObj);
+				$resultStr = sprintf($textTpl, $content, 0);
+				echo $resultStr;
 				break;
 		}
-		$resultStr = $this->responseText($object,$contentStr);
-		return $resultStr;
+	}
+	
+	public function handleMenu($postObj){
+		$EventKey = $postObj->EventKey;
+		$content = "";
+		switch($EventKey){
+			case 'jiebanyou':
+				$content = "你点击了结伴游";
+				break;
+			case 'fenxiang':
+				$content = "你点击了旅途分享";
+				break;
+			case 'jiudian':
+				$content = "你要订酒店";
+				break;
+			case 'jiaotong':
+				$content = "你要查交通";
+				break;
+			case 'menpiao':
+				$content = "门票预定";
+				break;
+			default:
+				$content = "火星人";
+				break;
+		}
+		$textTpl = $this->replyType("text",$postObj);
+		$resultStr = sprintf($textTpl, $content, 0);
+		echo $resultStr;
 	}
 	
 	public function handleLocation($postObj){
 		$newsTpl = $this->replyType('news',$postObj);
-		$content = "Hey , girl! What\'s your name";
-		$title = "Hello，我是夏露";
-		$description = "你好，我是夏露，我喜欢人们叫我老夏。我是一个程序员，主要擅长LAMP。目前从事互联网行业，喜欢折腾新的东西……我有一个博客，记录我的生活、写着我的笔记，如果你有兴趣，你可以点击这里！";
-		$picurl = "http://sanshu.qiniudn.com/20140408164-5050_view.jpg?token=5FZTA1Dfl7J2SbsAiSNwWusgvd1k10IMyKNY9b1G:qBi3o1CEkaAC4DjdQ5sDPHV3Xt0=:eyJTIjoic2Fuc2h1LnFpbml1ZG4uY29tLzIwMTQwNDA4MTY0LTUwNTBfdmlldy5qcGciLCJFIjoxMzk3NTQwMjcwfQ==&imageView/2/w/203/h/203";
-		$url = "http://blog.molab.cn";
+		$x = $postObj->Location_X;
+		$y = $postObj->Location_Y;
+		$s = $postObj->Scale;
+		$l = $postObj->Label;
+		$title = "你发送了一条地理信息";
+		$description = "纬度：".$x."；\n经度：".$y."；\n缩放比例：".$s."；\n地址：".$l;
+		$content = "描述";
+		$picurl = "http://sanshu.qiniudn.com/pic59b1OOOPIC46.jpg?token=5FZTA1Dfl7J2SbsAiSNwWusgvd1k10IMyKNY9b1G:3tyD0k5p5-Hs_JH_p2Ram2j8lJc=:eyJTIjoic2Fuc2h1LnFpbml1ZG4uY29tL3BpYzU5YjFPT09QSUM0Ni5qcGciLCJFIjoxMzk3NjYyODQ4fQ==&imageView/2/w/203/h/203";
+		//$url = "http://blog.molab.cn";
+		//$url = "http://maps.google.com/maps?q=".$x.",".$y."&iwloc=A&hl=zh-CN";
+		$url = "http://maps.google.com/maps?q=".$x.",".$y;
 		$resultStr = sprintf($newsTpl, $content, $title, $description, $picurl, $url, 0);
 		echo $resultStr;
-	}
-	
-	public function responseText($object,$content,$flag=0){
-		$textTpl = $this->replyType("text",$postObj);
-		$resultStr = sprintf($textTpl, $content, $flag);
-		return $resultStr;
 	}
 	
 	private function weather($n){
