@@ -138,8 +138,7 @@ class wechatCallbackapiTest{
 					<Articles>
 						<item>
 							<Title><![CDATA[%s]]></Title>
-							<Description><![CDATA[%s]]>
-					</Description>
+							<Description><![CDATA[%s]]></Description>
 							<PicUrl><![CDATA[%s]]></PicUrl>
 							<Url><![CDATA[%s]]></Url>
 						</item>
@@ -162,32 +161,21 @@ class wechatCallbackapiTest{
 	}
 	
 	public function handleText($postObj){
-		$fromUsername = $postObj->FromUserName;
-		$toUsername = $postObj->ToUserName;
 		$keyword = trim($postObj->Content);
-		$time = time();
-		$textTpl = "<xml>
-					<ToUserName><![CDATA[%s]]></ToUserName>
-					<FromUserName><![CDATA[%s]]></FromUserName>
-					<CreateTime>%s</CreateTime>
-					<MsgType><![CDATA[%s]]></MsgType>
-					<Content><![CDATA[%s]]></Content>
-					<FuncFlag>0</FuncFlag>
-					</xml>";
+		$textTpl = $this->replyType("text",$postObj);
 		
-		if(!empty( $keyword )){
+		if(!empty($keyword)){
 			$msgType = "text";
 			//substr($keyword,4)
 			$strlen = strlen($keyword);
 			if($strlen>6){
 				$act = mb_strcut($keyword,0,6,'utf-8');//获取执行操作
 				//$act = mb_substr($keyword,0,2,'utf-8');//截取开始两个字符
-				$content = mb_strcut($keyword,6,$strlen,'utf-8');//获取执行内容
+				$content = trim(mb_strcut($keyword,6,$strlen,'utf-8'));//获取执行内容
 				if($act=="天气"){
 					$data = $this->weather($content);
 					if(empty($data->weatherinfo)){
 						$contentStr = "抱歉，没有查到\"".$content."\"的天气信息！";
-						$resultStr = sprintf($textTpl, $fromUsername, $toUsername, $time, $msgType, $contentStr);
 					}else{
 						$contentStr = "【".$data->weatherinfo->city."天气预报】\n".
 						$data->weatherinfo->date_y." ".
@@ -202,21 +190,35 @@ class wechatCallbackapiTest{
 						$data->weatherinfo->weather3." ".
 						$data->weatherinfo->temp3." ".
 						$data->weatherinfo->wind3;
-						$resultStr = sprintf($textTpl, $fromUsername, $toUsername, $time, $msgType, $contentStr);
 					}
-					//$contentStr = "天气查询".$content;
+					$resultStr = sprintf($textTpl,$contentStr);
 				}else if($act=="快递"){
-					$contentStr = "快递查询".$content;
-					$resultStr = sprintf($textTpl, $fromUsername, $toUsername, $time, $msgType, $contentStr);
+					//http://m.kuaidi100.com/index_all.html?type=yunda&postid=1201207116091#result
+					$arr = explode(" ",$keyword);
+					$expname = $arr[1];//获取快递服务商
+					$expno = $arr[2];//获取快递单号
+					
+					include("ExpressList.php");
+					//in_array($expname,$exp);是否存在
+					$expcode = array_search($expname,$exp);
+					
+					$url = "http://m.kuaidi100.com/index_all.html?type=".$expcode."&postid=".$expno."#result";
+					
+					$newsTpl = $this->replyType('news',$postObj);
+					$content = "快递查询";
+					$picurl = "http://sanshu.qiniudn.com/pic_anymouse1359347919-1.jpg?token=5FZTA1Dfl7J2SbsAiSNwWusgvd1k10IMyKNY9b1G:rxOz8tgh0a_s9c8CLOCbW8Zycrk=:eyJTIjoic2Fuc2h1LnFpbml1ZG4uY29tL3BpY19hbnltb3VzZTEzNTkzNDc5MTktMS5qcGciLCJFIjoxMzk3NTQyMDEwfQ==&imageView/2/w/203/h/203";
+					$resultStr = sprintf($newsTpl, $content, $expcode, $expname, $picurl, $url, 0);
+					$resultStr;
 				}else if($act=="翻译"){
 					$contentStr = $this->baiduDict($content);
-					$resultStr = sprintf($textTpl, $fromUsername, $toUsername, $time, $msgType, $contentStr);
+					$resultStr = sprintf($textTpl,$contentStr);
+				}else if($act=="搜歌"){
+					echo $this->soMusic($postObj,urlencode($content));
 				}else if($act=="线路"){
 					$contentStr = "线路查询".$content;
-					$resultStr = sprintf($textTpl, $fromUsername, $toUsername, $time, $msgType, $contentStr);
+					$resultStr = sprintf($textTpl,$contentStr);
 				}else{
-					$contentStr = $act."的查询功能我们正在开发~敬请期待";
-					$resultStr = sprintf($textTpl, $fromUsername, $toUsername, $time, $msgType, $contentStr);
+					echo $this->replyChat($postObj,$keyword);
 				}
 			}else{
 				if($keyword=="老夏" || $keyword=="夏露"){
@@ -227,60 +229,91 @@ class wechatCallbackapiTest{
 					$picurl = "http://sanshu.qiniudn.com/pic_anymouse1359347919-1.jpg?token=5FZTA1Dfl7J2SbsAiSNwWusgvd1k10IMyKNY9b1G:rxOz8tgh0a_s9c8CLOCbW8Zycrk=:eyJTIjoic2Fuc2h1LnFpbml1ZG4uY29tL3BpY19hbnltb3VzZTEzNTkzNDc5MTktMS5qcGciLCJFIjoxMzk3NTQyMDEwfQ==&imageView/2/w/203/h/203";
 					$url = "http://find.aliapp.com/Resume/";
 					$resultStr = sprintf($newsTpl, $content, $title, $description, $picurl, $url, 0);
-					echo $resultStr;
+					$resultStr;
 				}else if($keyword == "听歌"){
-					$music = array(
-						array(
-							'title'=>'You are beautiful',
-							'description'=>'You are beautiful',
-							'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/James%20Blunt%20-%20You%20Are%20Beautiful.mp3',
-							'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/James%20Blunt%20-%20You%20Are%20Beautiful.mp3'
-						),
-						array(
-							'title'=>'Jewel - Stand',
-							'description'=>'Stand',
-							'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/jewel%20-%20stand.mp3',
-							'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/jewel%20-%20stand.mp3'
-						),
-						array(
-							'title'=>'TimeLess',
-							'description'=>'Timeless',
-							'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Kelly%20Clarkson%20-%20Timeless.mp3',
-							'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Kelly%20Clarkson%20-%20Timeless.mp3'
-						),
-						array(
-							'title'=>'Because of you',
-							'description'=>'Because of you',
-							'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/kelly%20clarkson%20-%20because%20of%20you.mp3',
-							'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/kelly%20clarkson%20-%20because%20of%20you.mp3'
-						),
-						array(
-							'title'=>'Every Moment of my life',
-							'description'=>'Every Moment of my life',
-							'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Sarah%20Connor%20-%20Every%20Moment%20Of%20My%20Life.mp3',
-							'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Sarah%20Connor%20-%20Every%20Moment%20Of%20My%20Life.mp3'
-						),
-						array(
-							'title'=>'TimeLess',
-							'description'=>'Timeless',
-							'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Kelly%20Clarkson%20-%20Timeless.mp3',
-							'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Kelly%20Clarkson%20-%20Timeless.mp3'
-						)
-					);
-					$musicTpl = $this->replyType("music",$postObj);
-					$len = count($music);
-					$rd = rand(0,$len-1);
-					$resultStr = sprintf($musicTpl, $music[$rd]['title'],$music[$rd]['description'],$music[$rd]['url'],$music[$rd]['hqurl']);
+					echo $this->randomMusic($postObj);
+				}else if($keyword == "笑话"){
+					echo $this->replyHaha($postObj);
 				}else{
-					$contentStr = "您的消息已经收到，我们将尽快给您答复，请稍安勿躁~\n\n您的原始消息:".$keyword."\n我正在积极成长当中，目前功能尚少，敬请原谅。现在，你可以发送'听歌'给我享受美妙的音乐啦";
-					$resultStr = sprintf($textTpl, $fromUsername, $toUsername, $time, $msgType, $contentStr);
+					echo $this->replyChat($postObj,$keyword);
 				}
 			}
 			//$contentStr = "Welcome to wechat world!";
 			echo $resultStr;
 		}else{
-			echo "啦，说点什么呗~";
+			echo $this->replyChat($postObj,$keyword);
 		}
+	}
+	
+	public function replyChat($postObj,$keyword){
+		$json = file_get_contents("http://api.ajaxsns.com/api.php?key=free&appid=0&msg=".urlencode($keyword));
+		$info = json_decode($json,true);
+		$content = $info['content'];
+		$textTpl = $this->replyType("text",$postObj);
+		return $resultStr = sprintf($textTpl,$content);
+	}
+	
+	public function replyHaha($postObj){
+		$json = file_get_contents("http://api.ajaxsns.com/api.php?key=free&appid=0&msg=%e7%ac%91%e8%af%9d");
+		$info = json_decode($json,true);
+		$content = $info['content'];
+		$textTpl = $this->replyType("text",$postObj);
+		return $resultStr = sprintf($textTpl,$content);
+	}
+	
+	public function randomMusic($postObj){
+		$music = array(
+			array(
+				'title'=>'You are beautiful',
+				'description'=>'You are beautiful',
+				'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/James%20Blunt%20-%20You%20Are%20Beautiful.mp3',
+				'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/James%20Blunt%20-%20You%20Are%20Beautiful.mp3'
+			),
+			array(
+				'title'=>'Jewel - Stand',
+				'description'=>'Stand',
+				'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/jewel%20-%20stand.mp3',
+				'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/jewel%20-%20stand.mp3'
+			),
+			array(
+				'title'=>'TimeLess',
+				'description'=>'Timeless',
+				'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Kelly%20Clarkson%20-%20Timeless.mp3',
+				'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Kelly%20Clarkson%20-%20Timeless.mp3'
+			),
+			array(
+				'title'=>'Because of you',
+				'description'=>'Because of you',
+				'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/kelly%20clarkson%20-%20because%20of%20you.mp3',
+				'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/kelly%20clarkson%20-%20because%20of%20you.mp3'
+			),
+			array(
+				'title'=>'Every Moment of my life',
+				'description'=>'Every Moment of my life',
+				'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Sarah%20Connor%20-%20Every%20Moment%20Of%20My%20Life.mp3',
+				'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Sarah%20Connor%20-%20Every%20Moment%20Of%20My%20Life.mp3'
+			),
+			array(
+				'title'=>'TimeLess',
+				'description'=>'Timeless',
+				'url'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Kelly%20Clarkson%20-%20Timeless.mp3',
+				'hqurl'=>'http://find.aliapp.com/Uploads/WeChat/Musics/Kelly%20Clarkson%20-%20Timeless.mp3'
+			)
+		);
+		$musicTpl = $this->replyType("music",$postObj);
+		$len = count($music);
+		$rd = rand(0,$len-1);
+		$resultStr = sprintf($musicTpl, $music[$rd]['title'],$music[$rd]['description'],$music[$rd]['url'],$music[$rd]['hqurl']);
+		return $resultStr;
+	}
+	
+	public function soMusic($postObj,$music){
+		$json = file_get_contents("http://api2.sinaapp.com/search/music/?appkey=0020130430&appsecert=fa6095e1133d28ad&reqtype=music&keyword=".urlencode($music));
+		$info = json_decode($json,true);
+		$content = $info['music'];
+		$musicTpl = $this->replyType("music",$postObj);
+		$resultStr = sprintf($musicTpl, $content['title'],$content['title'],$content['musicurl'],$content['hqmusicurl']);
+		return $resultStr;
 	}
 	
 	public function handleEvent($postObj){
@@ -289,10 +322,10 @@ class wechatCallbackapiTest{
 			case 'subscribe':
 				$newsTpl = $this->replyType('news',$postObj);
 				$content = "Hey , girl! What\'s your name";
-				$title = "Ladies and 乡亲们，欢饮关注户外管家！";
-				$description = "我是户外管家，您的贴身旅游小卫士！我们专长户外游，竭诚为您提供良好的户外游服务！约伴、路线、天气、订票、分享……都可以找我！";
-				$picurl = "http://sanshu.qiniudn.com/pic_anymouse1359347919-1.jpg?token=5FZTA1Dfl7J2SbsAiSNwWusgvd1k10IMyKNY9b1G:rxOz8tgh0a_s9c8CLOCbW8Zycrk=:eyJTIjoic2Fuc2h1LnFpbml1ZG4uY29tL3BpY19hbnltb3VzZTEzNTkzNDc5MTktMS5qcGciLCJFIjoxMzk3NTQyMDEwfQ==&imageView/2/w/203/h/203";
-				$url = "http://find.aliapp.com/Resume/";
+				$title = "Ladies and 乡亲们，欢迎关注夏露君";
+				$description = "如您所知，我是夏露君！";
+				$picurl = "http://xialu-public.stor.sinaapp.com/wechat/image/2014/0418/pic_anymouse1359347919-1.jpg";
+				$url = "http://xialu.sinaapp.com/Resume/";
 				$resultStr = sprintf($newsTpl, $content, $title, $description, $picurl, $url, 0);
 				echo $resultStr;
 				break;
@@ -316,27 +349,58 @@ class wechatCallbackapiTest{
 		$EventKey = $postObj->EventKey;
 		$content = "";
 		switch($EventKey){
-			case 'jiebanyou':
-				$content = "你点击了结伴游";
+			case 'tianqi':
+				$title = "天气查询";
+				$content = "天气查询";
+				$description = "给我发送\"天气城市名\"，比如\"天气上海\"，即可查询该城市的天气";
+				$picurl = "";
+				$url = "";
+				$this->replySingleNews($postObj, $content, $title, $description, $picurl, $url);
 				break;
-			case 'fenxiang':
-				$content = "你点击了旅途分享";
+			case 'kuaidi':
+				$title = "快递查询";
+				$content = "快递查询";
+				$description = "给我发送\"快递 快递服务商 单号\"，比如\"快递 韵达 1234567890123\"，即可查询该单号的快递信息";
+				$picurl = "";
+				$url = "";
+				$this->replySingleNews($postObj, $content, $title, $description, $picurl, $url);
 				break;
-			case 'jiudian':
-				$content = "你要订酒店";
+			case 'fanyi':
+				$title = "翻译";
+				$content = "翻译";
+				$description = "给我发送\"翻译单词\"，比如\"翻译Hello\"，即可查询到Hello的意思";
+				$picurl = "";
+				$url = "";
+				$this->replySingleNews($postObj, $content, $title, $description, $picurl, $url);
 				break;
-			case 'jiaotong':
-				$content = "你要查交通";
+			case 'tingge':
+				$this->randomMusic($postObj);
 				break;
-			case 'menpiao':
-				$content = "门票预定";
+			case 'souge':
+				$title = "搜歌听歌";
+				$content = "搜歌";
+				$description = "给我发送\"搜歌歌曲名\"，比如\"搜歌我爱你\"，即可微信听歌曲我爱你";
+				$picurl = "";
+				$url = "";
+				$this->replySingleNews($postObj, $content, $title, $description, $picurl, $url);
+				break;
+			case 'xiaohua':
+				echo $this->replyHaha($postObj);
 				break;
 			default:
-				$content = "火星人";
+				$title = "未知时间";
+				$content = "使用帮助";
+				$description = "";
+				$picurl = "";
+				$url = "";
+				$this->replySingleNews($postObj, $content, $title, $description, $picurl, $url);
 				break;
 		}
-		$textTpl = $this->replyType("text",$postObj);
-		$resultStr = sprintf($textTpl, $content, 0);
+	}
+	
+	public function replySingleNews($postObj, $content, $title, $description, $picurl, $url){
+		$tpl = $this->replyType("news", $postObj);
+		$resultStr = sprintf($tpl, $content, $title, $description, $picurl, $url, 0);
 		echo $resultStr;
 	}
 	
