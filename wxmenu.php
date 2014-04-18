@@ -1,9 +1,7 @@
 <?php 
-//定义微信接口凭证appid,appsecret，请到公众平台获取
 define("APPID","wx**********");
-define("APPSECRET","************************");
+define("APPSECRET","********************");
 class Wxmenu {
-	//根据凭证获取access_token
 	public function access_token(){
 		$ch = curl_init("https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=".APPID."&secret=".APPSECRET);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true) ; // 获取数据返回  
@@ -13,53 +11,50 @@ class Wxmenu {
 		return $wxarray["access_token"];
 	}
 	
-	//认证之后创建菜单
 	public function create_menu(){
 		$key = $this->access_token();
 		$url = "https://api.weixin.qq.com/cgi-bin/menu/create?access_token=".$key;
-		/*
-		$menu是一个json文件
-		菜单最多支持三个顶级和每个五个二级
-		菜单有两种：跳转菜单、按钮菜单。
-		*/
 		$menu = '{
 			"button":[{
-				"type":"click",
-				"name":"结伴游",
-				"key":"jiebanyou"
-			},{
-				"name":"游攻略",
+				"name":"生活助手",
 				"sub_button":[{
-					"type":"view",
-					"name":"游玩线路",
-					"url":"http://find.aliapp.com/Resume/"
+					"type":"click",
+					"name":"天气查询",
+					"key":"tianqi"
 				},{
 					"type":"click",
-					"name":"旅途分享",
-					"key":"fenxiang"
+					"name":"快递查询",
+					"key":"kuaidi"
 				},{
 					"type":"click",
-					"name":"订酒店",
-					"key":"jiudian"
+					"name":"单词翻译",
+					"key":"fanyi"
+				}]
+			},{
+				"name":"找点乐子",
+				"sub_button":[{
+					"type":"click",
+					"name":"随机听歌",
+					"key":"tingge"
 				},{
 					"type":"click",
-					"name":"订交通",
-					"key":"jiaotong"
+					"name":"搜索听歌",
+					"key":"souge"
 				},{
 					"type":"click",
-					"name":"订门票",
-					"key":"menpiao"
+					"name":"微信笑话",
+					"key":"xiaohua"
 				}]
 			},{
 				"name":"精品推荐",
 				"sub_button":[{
 					"type":"view",
-					"name":"游玩线路",
+					"name":"作者",
 					"url":"http://find.aliapp.com/Resume/"
 				},{
 					"type":"view",
-					"name":"游玩分享",
-					"url":"http://find.aliapp.com/Resume/"
+					"name":"糗事百科",
+					"url":"http://m.qiushibaike.com/"
 				}]
 			}]
 		}';
@@ -85,6 +80,5 @@ class Wxmenu {
 		var_dump($info);
 	}
 }
-//调用并执行
 $wxmenu = new Wxmenu();
 $wxmenu->create_menu();
