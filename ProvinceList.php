@@ -1,7 +1,10 @@
 <?php 
 /*
-全中国地区在weather.com.cn的代码
-可以作为单独的项目使用
+Name: 微信公众平台PHP SDK
+Version: V1.0424
+Author: Luke<http://blog.molab.cn>
+Description: 当前文件为weather.com.cn的城市代码对应表，在微信SDK项目中作为附属使用，当然你也可以随意用在其它项目
+URL: http://blog.molab.cn
 */
 $city_id = array(
 "北京"=>"101010100",
