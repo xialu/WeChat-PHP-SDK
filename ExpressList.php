@@ -1,4 +1,11 @@
 <?php 
+/*
+Name: 微信公众平台PHP SDK
+Version: V1.0424
+Author: Luke<http://blog.molab.cn>
+Description: 当前文件为kuaidi100.com的优化过后的快递代码对应表，在微信SDK项目中作为附属使用，当然你也可以随意用在其它项目
+URL: http://blog.molab.cn
+*/
 $exp = array(
 "aae"=>"aae全球",
 "anjie"=>"安捷",
@@ -91,4 +98,5 @@ $exp = array(
 "zhongxinda"=>"忠信达",
 "zhimakaimen"=>"芝麻开门"
 );
+$express = array_flip($exp);//翻转kv
 ?>
