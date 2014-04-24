@@ -1,36 +1,69 @@
 <?php
 /*
-PHP微信公众平台接口
-接口基于腾讯微信官方SDK，文件做了一些简单的封装，植入了常用的一些功能。
-1，快递查询
-2，单词翻译
-3，听歌
+Name: 微信公众平台PHP SDK
+Version: V1.0424
+Author: Luke<http://blog.molab.cn>
+Description: 本SDK是基于微信官方发布的基础SDK Demo完善而成。 当前已经完成多种格式的消息回复、 快递查询、 天气查询、 聊天、 二维码生成、 翻译、 听歌、 自定义菜单动作…… 几乎包含了所有的微信 （没有认证的服务号、已经认证的订阅号、未认证的订阅号） API接口。 具体的API文档可以参照微信公众平台说明http://mp.weixin.qq.com/wiki/index.php?title=%E9%A6%96%E9%A1%B5 
+Notice: 文件包含某些音乐、图片资源，你可以选择使用或者摈弃，对于使用资源的同学，这里不保证资源的有效性
+URL: http://blog.molab.cn
 */
-//define your token
-define("TOKEN", "molab");
-$wechatObj = new wechatCallbackapiTest();
-$wechatObj->responseMsg();
-//$wechatObj->valid();
 
-class wechatCallbackapiTest{
+//定义通讯Token
+define("TOKEN", "molab");
+$wechatObj = new WeChatSDK();
+$wechatObj->responseMsg();//消息反馈
+$wechatObj->valid();//服务器接口配置认证
+
+class WeChatSDK{
 	public function valid(){
-        $echoStr = $_GET["echostr"];
-        //valid signature , option
+        $echoStr = $_GET["echostr"];//获取微信传输过来的参数
+        //验证接口信息
         if($this->checkSignature()){
         	echo $echoStr;
         	exit;
         }
     }
+	
+	private function checkSignature(){
+        $signature = $_GET["signature"];
+        $timestamp = $_GET["timestamp"];
+        $nonce = $_GET["nonce"];
+		
+		$token = TOKEN;
+		$tmpArr = array($token, $timestamp, $nonce);
+		sort($tmpArr, SORT_STRING);
+		$tmpStr = implode( $tmpArr );
+		$tmpStr = sha1( $tmpStr );
+		
+		if( $tmpStr == $signature ){
+			return true;
+		}else{
+			return false;
+		}
+	}
 
     public function responseMsg(){
-		//get post data, May be due to the different environments
+		//获取POST参数，使用了HTTP_RAW_POST_DATA，防止不同服务器造成的不兼容
 		$postStr = $GLOBALS["HTTP_RAW_POST_DATA"];
 		
-      	//extract post data
+      	//解析POST提交的数据
 		if (!empty($postStr)){
 			$postObj = simplexml_load_string($postStr, 'SimpleXMLElement', LIBXML_NOCDATA);
 			$RX_TYPE = trim($postObj->MsgType);
 			
+			/*
+			判断接收到消息的类型，根据消息类型做出对应的响应。关于微信用户发送给公众帐号的消息类型请参照
+			http://mp.weixin.qq.com/wiki/index.php?title=%E6%8E%A5%E6%94%B6%E6%99%AE%E9%80%9A%E6%B6%88%E6%81%AF 普通消息
+			http://mp.weixin.qq.com/wiki/index.php?title=%E6%8E%A5%E6%94%B6%E4%BA%8B%E4%BB%B6%E6%8E%A8%E9%80%81 事件推送
+			http://mp.weixin.qq.com/wiki/index.php?title=%E6%8E%A5%E6%94%B6%E8%AF%AD%E9%9F%B3%E8%AF%86%E5%88%AB%E7%BB%93%E6%9E%9C 语音识别
+			
+			MsgType 可以判断消息类型
+			Event 可以判断用户动作类型
+			EventKey 可以判断点击进来的自定义菜单或者用户动作类型（关注、二维码）
+			*部分消息类型可以在当前方法细化操作，也可以在回复方法中进行操作
+			
+			*微信接受消息和发送消息使用的是不同的方式，，发送消息请参照replyType()
+			*/
 			switch($RX_TYPE){
 				case 'text':
 					$resultStr = $this->handleText($postObj);
@@ -39,15 +72,18 @@ class wechatCallbackapiTest{
 					$resultStr = $this->handleImage($postObj);
 					break;
 				case 'voice':
+					//接受语音消息，也可以接受语音识别结果
 					$resultStr = $this->handleVoice($postObj);
 					break;
 				case 'video':
 					$resultStr = $this->handleVideo($postObj);
 					break;
 				case 'location':
+					//接受普通的地理位置信息，但不能接受上报的地理位置信息
 					$resultStr = $this->handleLocation($postObj);
 					break;
 				case 'event':
+					//接受用户操作，接受自定义菜单，接受地理位置上报
 					$resultStr = $this->handleEvent($postObj);
 					break;
 				case 'link':
@@ -63,7 +99,21 @@ class wechatCallbackapiTest{
         }
     }
 	
+	/*
+	回发的消息模版
+	$type 为定义的消息类型
+	$postObj 为用户发送过来的消息，经过xml解析之后的数组
+	*/
 	public function replyType($type, $postObj){
+		/*
+		发送给用户的消息需要将接收到的消息用户位置调换
+		几乎所有的消息类型都有$fromUsername $toUsername $time 这三个属性
+		FuncFlag默认为0，可以省略，该标志可以用来处理连续事件
+		
+		这里说列的模版都是被动消息，客服消息不同于被动消息，客服消息可以在24Hr主动发送给用户。 客服消息使用的是json格式数据。
+
+		*客服消息、高级群发目前还在完善
+		*/
 		$fromUsername = $postObj->FromUserName;
 		$toUsername = $postObj->ToUserName;
 		$time = time();
@@ -78,7 +128,7 @@ class wechatCallbackapiTest{
 					<FuncFlag>0</FuncFlag>
 					</xml>";
 				break;
-			case 'image':
+			case 'image'://回复图文消息
 				$tpl = "<xml>
 					<ToUserName><![CDATA[{$fromUsername}]]></ToUserName>
 					<FromUserName><![CDATA[{$toUsername}]]></FromUserName>
@@ -160,6 +210,10 @@ class wechatCallbackapiTest{
 		return $tpl;
 	}
 	
+	/*
+	发送文本消息
+	$postObj 为用户传递过来的消息类型的数组数据
+	*/
 	public function handleText($postObj){
 		$keyword = trim($postObj->Content);
 		$textTpl = $this->replyType("text",$postObj);
@@ -218,9 +272,10 @@ class wechatCallbackapiTest{
 					$contentStr = "线路查询".$content;
 					$resultStr = sprintf($textTpl,$contentStr);
 				}else{
-					echo $this->replyChat($postObj,$keyword);
+					echo $this->replyChat($postObj);
 				}
 			}else{
+				//装逼模式启动
 				if($keyword=="老夏" || $keyword=="夏露"){
 					$newsTpl = $this->replyType('news',$postObj);
 					$content = "Hey , girl! What\'s your name";
@@ -235,18 +290,22 @@ class wechatCallbackapiTest{
 				}else if($keyword == "笑话"){
 					echo $this->replyHaha($postObj);
 				}else{
-					echo $this->replyChat($postObj,$keyword);
+					echo $this->replyChat($postObj);
 				}
 			}
 			//$contentStr = "Welcome to wechat world!";
 			echo $resultStr;
 		}else{
-			echo $this->replyChat($postObj,$keyword);
+			echo $this->replyChat($postObj);
 		}
 	}
 	
-	public function replyChat($postObj,$keyword){
-		$json = file_get_contents("http://api.ajaxsns.com/api.php?key=free&appid=0&msg=".urlencode($keyword));
+	/*
+	和用户聊天
+	$postObj 为用户发过来的消息整体
+	*/
+	public function replyChat($postObj){
+		$json = file_get_contents("http://api.ajaxsns.com/api.php?key=free&appid=0&msg=".urlencode(trim($postObj->Content)));
 		$info = json_decode($json,true);
 		$content = $info['content'];
 		$textTpl = $this->replyType("text",$postObj);
@@ -353,7 +412,7 @@ class wechatCallbackapiTest{
 				$title = "天气查询";
 				$content = "天气查询";
 				$description = "给我发送\"天气城市名\"，比如\"天气上海\"，即可查询该城市的天气";
-				$picurl = "";
+				$picurl = "http://xialu-public.stor.sinaapp.com/wechat/image/2014/0419/tianqi_0.jpg";
 				$url = "";
 				$this->replySingleNews($postObj, $content, $title, $description, $picurl, $url);
 				break;
@@ -361,7 +420,7 @@ class wechatCallbackapiTest{
 				$title = "快递查询";
 				$content = "快递查询";
 				$description = "给我发送\"快递 快递服务商 单号\"，比如\"快递 韵达 1234567890123\"，即可查询该单号的快递信息";
-				$picurl = "";
+				$picurl = "http://xialu-public.stor.sinaapp.com/wechat/image/2014/0419/kuaidi_0.jpg";
 				$url = "";
 				$this->replySingleNews($postObj, $content, $title, $description, $picurl, $url);
 				break;
@@ -369,18 +428,18 @@ class wechatCallbackapiTest{
 				$title = "翻译";
 				$content = "翻译";
 				$description = "给我发送\"翻译单词\"，比如\"翻译Hello\"，即可查询到Hello的意思";
-				$picurl = "";
+				$picurl = "http://xialu-public.stor.sinaapp.com/wechat/image/2014/0419/fanyi_0.jpg";
 				$url = "";
 				$this->replySingleNews($postObj, $content, $title, $description, $picurl, $url);
 				break;
 			case 'tingge':
-				$this->randomMusic($postObj);
+				echo $this->randomMusic($postObj);
 				break;
 			case 'souge':
 				$title = "搜歌听歌";
 				$content = "搜歌";
 				$description = "给我发送\"搜歌歌曲名\"，比如\"搜歌我爱你\"，即可微信听歌曲我爱你";
-				$picurl = "";
+				$picurl = "http://xialu-public.stor.sinaapp.com/wechat/image/2014/0419/yinyue_0.jpg";
 				$url = "";
 				$this->replySingleNews($postObj, $content, $title, $description, $picurl, $url);
 				break;
@@ -388,10 +447,10 @@ class wechatCallbackapiTest{
 				echo $this->replyHaha($postObj);
 				break;
 			default:
-				$title = "未知时间";
+				$title = "未知事件";
 				$content = "使用帮助";
-				$description = "";
-				$picurl = "";
+				$description = "这里显示使用帮助";
+				$picurl = "http://xialu-public.stor.sinaapp.com/wechat/image/2014/0419/bangzhu_0.png";
 				$url = "";
 				$this->replySingleNews($postObj, $content, $title, $description, $picurl, $url);
 				break;
@@ -402,6 +461,10 @@ class wechatCallbackapiTest{
 		$tpl = $this->replyType("news", $postObj);
 		$resultStr = sprintf($tpl, $content, $title, $description, $picurl, $url, 0);
 		echo $resultStr;
+	}
+	
+	public function replyMutiNews($postObj,$array,$numbers){
+		return $postObj;
 	}
 	
 	public function handleLocation($postObj){
@@ -460,24 +523,6 @@ class wechatCallbackapiTest{
             curl_close($ch);
         }
         return $file_contents;
-	}
-		
-	private function checkSignature(){
-        $signature = $_GET["signature"];
-        $timestamp = $_GET["timestamp"];
-        $nonce = $_GET["nonce"];	
-        		
-		$token = TOKEN;
-		$tmpArr = array($token, $timestamp, $nonce);
-		sort($tmpArr, SORT_STRING);
-		$tmpStr = implode( $tmpArr );
-		$tmpStr = sha1( $tmpStr );
-		
-		if( $tmpStr == $signature ){
-			return true;
-		}else{
-			return false;
-		}
 	}
 }
 ?>
