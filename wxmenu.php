@@ -1,6 +1,13 @@
 <?php 
-define("APPID","wx**********");
-define("APPSECRET","********************");
+/*
+Name: 微信公众平台PHP SDK
+Version: V1.0424
+Author: Luke<http://blog.molab.cn>
+Description: 当前文件为微信菜单配置项目
+URL: http://blog.molab.cn
+*/
+define("APPID","wx************");
+define("APPSECRET","************");
 class Wxmenu {
 	public function access_token(){
 		$ch = curl_init("https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=".APPID."&secret=".APPSECRET);
@@ -29,6 +36,14 @@ class Wxmenu {
 					"type":"click",
 					"name":"单词翻译",
 					"key":"fanyi"
+				},{
+					"type":"click",
+					"name":"股票推荐",
+					"key":"gupiao"
+				},{
+					"type":"click",
+					"name":"看新闻",
+					"key":"xinwen"
 				}]
 			},{
 				"name":"找点乐子",
@@ -49,12 +64,16 @@ class Wxmenu {
 				"name":"精品推荐",
 				"sub_button":[{
 					"type":"view",
-					"name":"作者",
-					"url":"http://find.aliapp.com/Resume/"
+					"name":"作者主页",
+					"url":"http://xialu.sinaapp.com/Resume/"
 				},{
 					"type":"view",
 					"name":"糗事百科",
 					"url":"http://m.qiushibaike.com/"
+				},{
+					"type":"view",
+					"name":"暴走漫画",
+					"url":"http://m.baozoumanhua.com/"
 				}]
 			}]
 		}';
