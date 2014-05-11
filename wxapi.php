@@ -1,7 +1,7 @@
 <?php
 /*
 Name: 微信公众平台PHP SDK
-Version: V1.0424
+Version: V1.0511
 Author: Luke<http://blog.molab.cn>
 Description: 本SDK是基于微信官方发布的基础SDK Demo完善而成。 当前已经完成多种格式的消息回复、 快递查询、 天气查询、 聊天、 二维码生成、 翻译、 听歌、 自定义菜单动作…… 几乎包含了所有的微信 （没有认证的服务号、已经认证的订阅号、未认证的订阅号） API接口。 具体的API文档可以参照微信公众平台说明http://mp.weixin.qq.com/wiki/index.php?title=%E9%A6%96%E9%A1%B5 
 Notice: 文件包含某些音乐、图片资源，你可以选择使用或者摈弃，对于使用资源的同学，这里不保证资源的有效性
@@ -9,10 +9,10 @@ URL: http://blog.molab.cn
 */
 
 //定义通讯Token
-define("TOKEN", "molab");
+define("TOKEN", "*****");//微信通讯Token
 $wechatObj = new WeChatSDK();
-$wechatObj->responseMsg();//消息反馈
-$wechatObj->valid();//服务器接口配置认证
+//$wechatObj->valid();//服务器接口配置认证，配置使用时请取消注释
+$wechatObj->responseMsg();//消息反馈，配置使用时请注释
 
 class WeChatSDK{
 	public function valid(){
@@ -28,13 +28,11 @@ class WeChatSDK{
         $signature = $_GET["signature"];
         $timestamp = $_GET["timestamp"];
         $nonce = $_GET["nonce"];
-		
 		$token = TOKEN;
 		$tmpArr = array($token, $timestamp, $nonce);
 		sort($tmpArr, SORT_STRING);
 		$tmpStr = implode( $tmpArr );
 		$tmpStr = sha1( $tmpStr );
-		
 		if( $tmpStr == $signature ){
 			return true;
 		}else{
@@ -45,12 +43,11 @@ class WeChatSDK{
     public function responseMsg(){
 		//获取POST参数，使用了HTTP_RAW_POST_DATA，防止不同服务器造成的不兼容
 		$postStr = $GLOBALS["HTTP_RAW_POST_DATA"];
-		
-      	//解析POST提交的数据
+		//解析POST提交的数据
 		if (!empty($postStr)){
 			$postObj = simplexml_load_string($postStr, 'SimpleXMLElement', LIBXML_NOCDATA);
-			$RX_TYPE = trim($postObj->MsgType);
-			
+			$msgType = trim($postObj->MsgType);
+			$this->save_to_DB($postObj);
 			/*
 			判断接收到消息的类型，根据消息类型做出对应的响应。关于微信用户发送给公众帐号的消息类型请参照
 			http://mp.weixin.qq.com/wiki/index.php?title=%E6%8E%A5%E6%94%B6%E6%99%AE%E9%80%9A%E6%B6%88%E6%81%AF 普通消息
@@ -61,42 +58,19 @@ class WeChatSDK{
 			Event 可以判断用户动作类型
 			EventKey 可以判断点击进来的自定义菜单或者用户动作类型（关注、二维码）
 			*部分消息类型可以在当前方法细化操作，也可以在回复方法中进行操作
-			
 			*微信接受消息和发送消息使用的是不同的方式，，发送消息请参照replyType()
 			*/
-			switch($RX_TYPE){
-				case 'text':
-					$resultStr = $this->handleText($postObj);
-					break;
-				case 'image':
-					$resultStr = $this->handleImage($postObj);
-					break;
-				case 'voice':
-					//接受语音消息，也可以接受语音识别结果
-					$resultStr = $this->handleVoice($postObj);
-					break;
-				case 'video':
-					$resultStr = $this->handleVideo($postObj);
-					break;
-				case 'location':
-					//接受普通的地理位置信息，但不能接受上报的地理位置信息
-					$resultStr = $this->handleLocation($postObj);
-					break;
-				case 'event':
-					//接受用户操作，接受自定义菜单，接受地理位置上报
-					$resultStr = $this->handleEvent($postObj);
-					break;
-				case 'link':
-					$resultStr = $this->handleLink($postObj);
-					break;
-				default:
-					$resultStr = "未知消息类型".$RX_TYPE;
-					break;
+			switch($msgType){
+				case 'text':$resultStr = $this->handleText($postObj);break;
+				case 'image':$resultStr = $this->handleImage($postObj);break;
+				case 'voice':$resultStr = $this->handleVoice($postObj);break;//接受语音消息，也可以接受语音识别结果
+				case 'video':$resultStr = $this->handleVideo($postObj);break;
+				case 'location':$resultStr = $this->handleLocation($postObj);break;//接受普通的地理位置信息，但不能接受上报的地理位置信息
+				case 'event':$resultStr = $this->handleEvent($postObj);break;//接受用户操作，接受自定义菜单，接受地理位置上报
+				case 'link':$resultStr = $this->handleLink($postObj);break;
+				default:$resultStr = "未知消息类型".$msgType;break;
 			}
-        }else{
-        	echo "";
-        	exit;
-        }
+        }else{exit;}
     }
 	
 	/*
@@ -196,12 +170,23 @@ class WeChatSDK{
 					<FuncFlag>0</FuncFlag>
 					</xml>";
 				break;
-			default:
-				$textTpl = "<xml>
+			case 'mutiNews':
+				$tpl = "<xml>
 					<ToUserName><![CDATA[{$fromUsername}]]></ToUserName>
 					<FromUserName><![CDATA[{$toUsername}]]></FromUserName>
 					<CreateTime>{$time}</CreateTime>
-					<MsgType><![CDATA[{text}]]></MsgType>
+					<MsgType><![CDATA[news]]></MsgType>
+					<ArticleCount>%s</ArticleCount>
+					<Articles>%s</Articles>
+					<FuncFlag>0</FuncFlag>
+					</xml>";
+				break;
+			default:
+				$tpl = "<xml>
+					<ToUserName><![CDATA[{$fromUsername}]]></ToUserName>
+					<FromUserName><![CDATA[{$toUsername}]]></FromUserName>
+					<CreateTime>{$time}</CreateTime>
+					<MsgType><![CDATA[text]]></MsgType>
 					<Content><![CDATA[%s]]></Content>
 					<FuncFlag>0</FuncFlag>
 					</xml>";
@@ -216,8 +201,10 @@ class WeChatSDK{
 	*/
 	public function handleText($postObj){
 		$keyword = trim($postObj->Content);
-		$textTpl = $this->replyType("text",$postObj);
 		
+		
+		
+		$textTpl = $this->replyType("text",$postObj);
 		if(!empty($keyword)){
 			$msgType = "text";
 			//substr($keyword,4)
@@ -260,7 +247,7 @@ class WeChatSDK{
 					
 					$newsTpl = $this->replyType('news',$postObj);
 					$content = "快递查询";
-					$picurl = "http://sanshu.qiniudn.com/pic_anymouse1359347919-1.jpg?token=5FZTA1Dfl7J2SbsAiSNwWusgvd1k10IMyKNY9b1G:rxOz8tgh0a_s9c8CLOCbW8Zycrk=:eyJTIjoic2Fuc2h1LnFpbml1ZG4uY29tL3BpY19hbnltb3VzZTEzNTkzNDc5MTktMS5qcGciLCJFIjoxMzk3NTQyMDEwfQ==&imageView/2/w/203/h/203";
+					$picurl = "http://xialu-public.stor.sinaapp.com/wechat/image/2014/0418/pic_anymouse1359347919-1.jpg";
 					$resultStr = sprintf($newsTpl, $content, $expcode, $expname, $picurl, $url, 0);
 					$resultStr;
 				}else if($act=="翻译"){
@@ -281,7 +268,7 @@ class WeChatSDK{
 					$content = "Hey , girl! What\'s your name";
 					$title = "没错，我就是老夏，如假包换的老夏！";
 					$description = "你好，我是……，大家都叫我老夏，不妨你也这样称呼我吧！我是一个程序员，主要擅长LAMP。目前从事互联网行业，喜欢折腾新的东西……我有一个博客，记录我的生活、写着我的笔记，如果你有兴趣，你可以点击这里！";
-					$picurl = "http://sanshu.qiniudn.com/pic_anymouse1359347919-1.jpg?token=5FZTA1Dfl7J2SbsAiSNwWusgvd1k10IMyKNY9b1G:rxOz8tgh0a_s9c8CLOCbW8Zycrk=:eyJTIjoic2Fuc2h1LnFpbml1ZG4uY29tL3BpY19hbnltb3VzZTEzNTkzNDc5MTktMS5qcGciLCJFIjoxMzk3NTQyMDEwfQ==&imageView/2/w/203/h/203";
+					$picurl = "http://xialu-public.stor.sinaapp.com/wechat/image/2014/0418/pic_anymouse1359347919-1.jpg";
 					$url = "http://find.aliapp.com/Resume/";
 					$resultStr = sprintf($newsTpl, $content, $title, $description, $picurl, $url, 0);
 					$resultStr;
@@ -300,22 +287,36 @@ class WeChatSDK{
 		}
 	}
 	
+	public function handleImage(){
+		$this->get_point();
+	}
+	
 	/*
 	和用户聊天
 	$postObj 为用户发过来的消息整体
 	*/
 	public function replyChat($postObj){
-		$json = file_get_contents("http://api.ajaxsns.com/api.php?key=free&appid=0&msg=".urlencode(trim($postObj->Content)));
+		//$json = file_get_contents("http://api.ajaxsns.com/api.php?key=free&appid=0&msg=".urlencode(trim($postObj->Content)));
+		$json = file_get_contents("http://www.wendacloud.com/openapi/api?key=*********&info=".trim($postObj->Content));
 		$info = json_decode($json,true);
-		$content = $info['content'];
+		$content = $info['text'];
+		if(array_key_exists('url',$info)){
+			//接受到的数据可能包含链接
+			$content .= $info['url'];
+		}
 		$textTpl = $this->replyType("text",$postObj);
 		return $resultStr = sprintf($textTpl,$content);
 	}
 	
 	public function replyHaha($postObj){
-		$json = file_get_contents("http://api.ajaxsns.com/api.php?key=free&appid=0&msg=%e7%ac%91%e8%af%9d");
+		//$json = file_get_contents("http://api.ajaxsns.com/api.php?key=free&appid=0&msg=%e7%ac%91%e8%af%9d");
+		$json = file_get_contents("http://www.wendacloud.com/openapi/api?key=*********&info=笑话");
 		$info = json_decode($json,true);
-		$content = $info['content'];
+		$content = $info['text'];
+		if(array_key_exists('url',$info)){
+			//接受到的数据可能包含链接
+			$content .= $info['url'];
+		}
 		$textTpl = $this->replyType("text",$postObj);
 		return $resultStr = sprintf($textTpl,$content);
 	}
@@ -463,25 +464,88 @@ class WeChatSDK{
 		echo $resultStr;
 	}
 	
-	public function replyMutiNews($postObj,$array,$numbers){
-		return $postObj;
+	public function handleLocation($postObj){
+		$x = $postObj->Location_X;//纬度
+		$y = $postObj->Location_Y;//精度
+		$latitude = $x.",".$y;
+		echo $this->bdLbs($postObj,$latitude);
 	}
 	
-	public function handleLocation($postObj){
-		$newsTpl = $this->replyType('news',$postObj);
-		$x = $postObj->Location_X;
-		$y = $postObj->Location_Y;
-		$s = $postObj->Scale;
-		$l = $postObj->Label;
+	private function bdLbs($postObj,$latitude,$ak="**********"){
+		$bdlbsbaseurl = "http://api.map.baidu.com/telematics/v3/weather?location={$latitude}&output=json&ak={$ak}";
+		$json = $this->get_content($bdlbsbaseurl);
+		$info = json_decode($json,true);
+		$date = $info['date'];
+		$x = $postObj->Location_X;//纬度
+		$y = $postObj->Location_Y;//精度
+		$s = $postObj->Scale;//缩放比例
+		$l = $postObj->Label;//发来的地址信息
 		$title = "你发送了一条地理信息";
 		$description = "纬度：".$x."；\n经度：".$y."；\n缩放比例：".$s."；\n地址：".$l;
 		$content = "描述";
-		$picurl = "http://sanshu.qiniudn.com/pic59b1OOOPIC46.jpg?token=5FZTA1Dfl7J2SbsAiSNwWusgvd1k10IMyKNY9b1G:3tyD0k5p5-Hs_JH_p2Ram2j8lJc=:eyJTIjoic2Fuc2h1LnFpbml1ZG4uY29tL3BpYzU5YjFPT09QSUM0Ni5qcGciLCJFIjoxMzk3NjYyODQ4fQ==&imageView/2/w/203/h/203";
-		//$url = "http://blog.molab.cn";
-		//$url = "http://maps.google.com/maps?q=".$x.",".$y."&iwloc=A&hl=zh-CN";
-		$url = "http://maps.google.com/maps?q=".$x.",".$y;
-		$resultStr = sprintf($newsTpl, $content, $title, $description, $picurl, $url, 0);
-		echo $resultStr;
+		$picurl = "http://xialu-public.stor.sinaapp.com/wechat/image/2014/0424/ditu.png";
+		$url = "http://maps.google.com/maps?q=".$latitude;
+		
+		$less = "<item>";
+			$less .= "<Title><![CDATA[{$title}]]></Title>";
+			$less .= "<Description><![CDATA[{$description}]]></Description>";
+			$less .= "<PicUrl><![CDATA[http://xialu-public.stor.sinaapp.com/wechat/image/2014/0424/ditu.png]]></PicUrl>";
+			$less .= "<Url><![CDATA[{$url}]]></Url>";
+		$less .= "</item>";
+		
+		
+		$less .= "<item>";
+			$less .= "<Title><![CDATA[{$info['results'][0]['currentCity']}天气预报]]></Title>";
+			$less .= "<Description><![CDATA[天气预报，不能显示多条]]></Description>";
+			$less .= "<PicUrl><![CDATA[http://xialu-public.stor.sinaapp.com/wechat/image/2014/0424/ditu.png]]></PicUrl>";
+			$less .= "<Url><![CDATA[http://8.xialu.sinaapp.com/Resume/]]></Url>";
+		$less .= "</item>";
+		for($i=0;$i<count($info['results'][0]['weather_data']);$i++){
+			$more .= "<item>";
+				$more .= "<Title><![CDATA[{$info['results'][0]['weather_data'][$i]['date']}]]></Title>";
+				$more .= "<Description><![CDATA[{$info['results'][0]['weather_data'][$i]['weather']}.{$info['results'][0]['weather_data'][$i]['wind']}.{$info['results'][0]['weather_data'][$i]['temperature']}]]></Description>";
+				$more .= "<PicUrl><![CDATA[{$info['results'][0]['weather_data'][$i]['dayPictureUrl']}]]></PicUrl>";
+				$more .= "<Url><![CDATA[http://blog.molab.cn]]></Url>";
+			$more .= "</item>";
+		}
+		$count = count($info['results'][0]['weather_data'])+2;
+		$wInfo = $less.$more;
+		$tpl = $this->replyType('mutiNews',$postObj);
+		$resultStr = sprintf($tpl, $count, $wInfo);
+		return $resultStr;
+	}
+	
+	private function get_distance($lat_1,$lng_1,$lat_2,$lng_2){
+		$r = 6371*1000;//地球半径
+		$p = doubleval(180/pi());
+		
+		$a1 = doubleval($lat_1/$p);
+		$a2 = doubleval($lng_1/$p);
+		
+		//121.328088,30.954844
+		$b1 = doubleval($lat_2/$p);
+		$b2 = doubleval($lng_2/$p);
+		
+		$t1 = doubleval(cos($a1)*cos($a2)*cos($b1)*cos($b2));
+		$t2 = doubleval(cos($a1)*sin($a2)*cos($b1)*sin($b2));
+		$t3 = doubleval(sin($a1)*sin($b1));
+		
+		$t = doubleval(acos($t1+$t2+$t3));
+		
+		return round($r*$t);
+	}
+	
+	private function get_point(){
+		$mysqli = new mysqli(SAE_MYSQL_HOST_M.':'.SAE_MYSQL_PORT,SAE_MYSQL_USER,SAE_MYSQL_PASS,SAE_MYSQL_DB);
+		if($mysqli->connect_error){
+			echo "数据库连接出错";
+		}else{
+			//$mysqli->host_info;
+			$sql = "select * from wx_geo";
+			$result = $mysqli->query($sql);
+			$data = $result->fetch_array(MYSQLI_NUM);
+			var_dump($data);
+		}
 	}
 	
 	private function weather($n){
@@ -499,12 +563,12 @@ class WeChatSDK{
 		$word_code = urlencode($word);
 		$appid = "Rp0Y2XgqZCMENfW2qybiWY8t";
 		$url = "http://openapi.baidu.com/public/2.0/bmt/translate?client_id=".$appid."&q=".$word_code."&from=".$from."&to=".$to;
-		$text = json_decode($this->language_text($url));
+		$text = json_decode($this->get_content($url));
 		$text = $text->trans_result;
 		return $text[0]->dst;
 	}
 	
-	private function language_text($url){
+	private function get_content($url){
 		if(!function_exists('file_get_contents')){
             $file_contents = file_get_contents($url);
         }else{
@@ -524,5 +588,32 @@ class WeChatSDK{
         }
         return $file_contents;
 	}
+	
+	private function save_to_DB($postObj){
+		//$column = implode(",",array_keys((array)$postObj));//将对象转为数组,取出下标,转为小写,转为字符串作为字段
+		$k_array = array_keys((array)$postObj);
+		$column = '';
+		for($i=0;$i<count($k_array);$i++){
+			if($i<count($k_array)-1){
+				$column .= "`{$k_array[$i]}`,";
+			}else{
+				$column .= "`{$k_array[$i]}`";
+			}
+		}
+		//$values = implode(",",(array)$postObj);//将对象转为数组,转为字符串作为字段值
+		$v_array = array_values((array)$postObj);
+		$values = '';
+		for($i=0;$i<count($v_array);$i++){
+			if($i<count($v_array)-1){
+				$values .= "'{$v_array[$i]}',";
+			}else{
+				$values .= "'{$v_array[$i]}'";
+			}
+		}
+		$mysql = new SaeMysql();
+		$sql = "insert into `wx_history` ({$column}) values ({$values})";
+		$mysql->runSql($sql);
+		if ($mysql->errno() != 0) die("Error:" . $mysql->errmsg());
+		$mysql->closeDb();
+	}
 }
-?>
