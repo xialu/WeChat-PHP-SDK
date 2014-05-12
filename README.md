@@ -2,11 +2,22 @@ wechat
 ======
 Name: 微信公众平台PHP SDK
 
-Version: V1.0424
+Version: V1.0511
 
 Author: Luke<http://blog.molab.cn>
 
+WeChat: grandad(个人)     imxialu(公众账号)
+
 Description: 本SDK是基于微信官方发布的基础SDK Demo完善而成。 
+
+----
+五月更新说明
+
+增加数据入库（SAE平台）
+
+
+----
+四月更新说明
 
 当前已经完成多种格式的消息回复、 快递查询、 天气查询、 聊天、 二维码生成、 翻译、 听歌、 自定义菜单动作…… 几乎包含了所有的微信 （没有认证的服务号、已经认证的订阅号、未认证的订阅号） API接口。
 
