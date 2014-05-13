@@ -4,7 +4,7 @@ Name: 微信公众平台PHP SDK
 
 Version: V1.0511
 
-Author: Luke<http://blog.molab.cn>
+Author: Luke<http://www.xialu.org.cn>
 
 WeChat: grandad(个人)     imxialu(公众账号)
 
@@ -25,7 +25,7 @@ Description: 本SDK是基于微信官方发布的基础SDK Demo完善而成。
 
 Notice: 文件包含某些音乐、图片资源，你可以选择使用或者摈弃，对于使用资源的同学，这里不保证资源的有效性
 
-URL: http://blog.molab.cn
+URL: http://www.xialu.org.cn
 
 使用帮助
 ======
