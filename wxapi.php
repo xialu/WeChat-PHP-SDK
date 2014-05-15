@@ -2,10 +2,10 @@
 /*
 Name: 微信公众平台PHP SDK
 Version: V1.0511
-Author: Luke<http://blog.molab.cn>
+Author: Luke<http://www.xialu.org.cn>
 Description: 本SDK是基于微信官方发布的基础SDK Demo完善而成。 当前已经完成多种格式的消息回复、 快递查询、 天气查询、 聊天、 二维码生成、 翻译、 听歌、 自定义菜单动作…… 几乎包含了所有的微信 （没有认证的服务号、已经认证的订阅号、未认证的订阅号） API接口。 具体的API文档可以参照微信公众平台说明http://mp.weixin.qq.com/wiki/index.php?title=%E9%A6%96%E9%A1%B5 
 Notice: 文件包含某些音乐、图片资源，你可以选择使用或者摈弃，对于使用资源的同学，这里不保证资源的有效性
-URL: http://blog.molab.cn
+URL: http://www.xialu.org.cn
 */
 
 //定义通讯Token
