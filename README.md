@@ -2,9 +2,11 @@ wechat
 ======
 Name: 微信公众平台PHP SDK
 
-Version: V1.0511
+Version: V1.0515
 
 Author: Luke<http://www.xialu.org.cn>
+
+Mail: ikuu@sina.com
 
 WeChat: grandad(个人)     imxialu(公众账号)
 
@@ -13,7 +15,9 @@ Description: 本SDK是基于微信官方发布的基础SDK Demo完善而成。
 ----
 五月更新说明
 
-增加数据入库（SAE平台）
+1,增加数据入库（SAE平台）
+
+2,增加SAE平台消息到达邮件提醒
 
 
 ----
