@@ -48,6 +48,7 @@ class WeChatSDK{
 			$postObj = simplexml_load_string($postStr, 'SimpleXMLElement', LIBXML_NOCDATA);
 			$msgType = trim($postObj->MsgType);
 			$this->save_to_DB($postObj);
+			$this->send_mail($postObj);
 			/*
 			判断接收到消息的类型，根据消息类型做出对应的响应。关于微信用户发送给公众帐号的消息类型请参照
 			http://mp.weixin.qq.com/wiki/index.php?title=%E6%8E%A5%E6%94%B6%E6%99%AE%E9%80%9A%E6%B6%88%E6%81%AF 普通消息
@@ -615,5 +616,15 @@ class WeChatSDK{
 		$mysql->runSql($sql);
 		if ($mysql->errno() != 0) die("Error:" . $mysql->errmsg());
 		$mysql->closeDb();
+	}
+	
+	/*
+	由于微信消息接收过多,因此可能邮件比较多.不建议直接使用.
+	当然对于有选择性的发邮件还是可以的,比如遇到关键词为123的时候发送邮件云云
+	新浪SAE发送邮件的文档在http://apidoc.sinaapp.com/sae/SaeMail.html
+	*/
+	private function send_mail($postObj){
+		$mail = new SaeMail();
+		$bool = $mail->quickSend("****@qq.com","您有一条来自的微信公众平台用户".$postObj->FromUserName."的消息，请尽快回复","http://mp.weixin.qq.com","******@126.com","******","smtp.126.com",25);
 	}
 }
