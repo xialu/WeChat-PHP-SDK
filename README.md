@@ -4,7 +4,7 @@ Name: 微信公众平台PHP SDK
 
 Version: V1.0515
 
-Author: Luke<http://www.xialu.org.cn>
+Author: Luke<http://www.nianyue.com.cn>
 
 Mail: ikuu@sina.com
 
