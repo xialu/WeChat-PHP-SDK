@@ -1,5 +1,7 @@
 wechat
 ======
+[deprecated]
+
 Name: 微信公众平台PHP SDK
 
 Version: V1.0515
